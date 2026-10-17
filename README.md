@@ -42,20 +42,7 @@ graph TD
 
 ---
 
-## 🎨 Visual Identity — Cream × Olive
 
-The dashboard implements an institutional editorial aesthetic:
-- **Background**: Warm Cream (`#F7F5EC`)
-- **Card Surfaces**: Ivory (`#FFFDF7`)
-- **Primary Accent**: Olive Green (`#606B3F`)
-- **Deep Accent**: Forest Olive (`#3F492C`)
-- **Muted Sage**: `#A7AE8A`
-- **Subtle Borders**: `#E5E1D3`
-- **Primary Typography**: Deep Charcoal (`#292D23`)
-- **Performance Green**: `#2E6930`
-- **Drawdown Terracotta**: `#B33927`
-
----
 
 ## 🚀 Quickstart Guide
 
