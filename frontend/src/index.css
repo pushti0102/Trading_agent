@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cream-50: #FCFBF7;
+  --color-cream-100: #F7F5EC;
+  --color-cream-200: #EFECE0;
+  --color-cream-300: #E5E1D3;
+
+  --color-ivory: #FFFDF7;
+
+  --color-olive-50: #F4F6EE;
+  --color-olive-100: #E6EAD9;
+  --color-olive-200: #CCD5B5;
+  --color-olive-300: #A7AE8A;
+  --color-olive-400: #7E8B54;
+  --color-olive-500: #606B3F;
+  --color-olive-600: #4F5834;
+  --color-olive-700: #3F492C;
+  --color-olive-800: #2E3520;
+  --color-olive-900: #1D2114;
+
+  --color-sage: #A7AE8A;
+  --color-charcoal: #292D23;
+  --color-charcoal-muted: #77796D;
+  --color-charcoal-subtle: #9A9C92;
+
+  --color-gain: #2E6930;
+  --color-gain-bg: #EAF4EB;
+  --color-gain-border: #C3E2C6;
+
+  --color-loss: #B33927;
+  --color-loss-bg: #FAECE9;
+  --color-loss-border: #F0C7C0;
+
+  --color-borderBase: #E5E1D3;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #F7F5EC;
+  color: #292D23;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Custom refined scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F7F5EC;
+}
+::-webkit-scrollbar-thumb {
+  background: #CCD5B5;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #A7AE8A;
+}
+
+/* Financial tabular numbers */
+.num-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.shadow-card {
+  box-shadow: 0 1px 3px 0 rgba(41, 45, 35, 0.04), 0 1px 2px 0 rgba(41, 45, 35, 0.02);
+}
+
+.shadow-card-hover {
+  box-shadow: 0 4px 12px 0 rgba(41, 45, 35, 0.06), 0 2px 4px 0 rgba(41, 45, 35, 0.03);
+}

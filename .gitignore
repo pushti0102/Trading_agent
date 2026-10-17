@@ -1,0 +1,24 @@
+@"
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.env
+frontend/node_modules/
+frontend/dist/
+.vscode/
+
+# Dataset files
+data/
+
+# Trained models
+models/
+
+# Generated experiment results
+episode_results.csv
+evaluation_summary.csv
+rl_training_results.csv
+test_evaluation_summary.csv
+test_portfolio_history.csv
+"@ | Set-Content .gitignore
