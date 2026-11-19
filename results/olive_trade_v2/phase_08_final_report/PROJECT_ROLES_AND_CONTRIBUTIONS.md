@@ -252,3 +252,4 @@
    * *“On top of this environment, I developed the algorithmic trading suite. We implemented continuous policy-gradient RL including PPO with GAE, an upgraded Double Dueling DQN with Prioritized Experience Replay, and Stackelberg game theory.”*
 3. **Member 3 explains the breakthrough & results**:
    * *“To protect the agents from transaction fee drag, I introduced the Turnover Damping Constraint ($|w_t - w_{t-1}| \le 0.05$) and multi-agent ensembling. This unlocked verified positive performance: our PPO Continuous Trader delivered +7.63% net return (0.86 Sharpe) on unseen holdout data, beating Buy & Hold by +735 basis points.”*
+
