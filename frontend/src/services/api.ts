@@ -67,6 +67,13 @@ export interface EvaluationHistoryPoint {
   leader?: number;
   momentum?: number;
   buy_hold?: number;
+  ppo?: number;
+  ensemble?: number;
+  risk_parity?: number;
+  vol_targeting?: number;
+  a2c?: number;
+  ddpg?: number;
+  dqn?: number;
 }
 
 export interface TrainingEpisode {
@@ -333,4 +340,138 @@ export const api = {
 
   getExportTradesUrl: () => `${API_BASE}/api/export/trades.csv`,
   getExportEvaluationUrl: () => `${API_BASE}/api/export/evaluation.csv`,
+
+  // OliveTrade 2.0 Research API
+  getV2Agents: async (): Promise<{ agents: V2AgentInfo[] }> => {
+    const res = await fetch(`${API_BASE}/api/v2/agents`);
+    if (!res.ok) throw new Error('Failed to fetch v2 agents');
+    return res.json();
+  },
+
+  getV2WalkForwardSummary: async (): Promise<{ summary: V2WalkForwardSummaryItem[] }> => {
+    const res = await fetch(`${API_BASE}/api/v2/walk-forward/summary`);
+    if (!res.ok) throw new Error('Failed to fetch walk-forward summary');
+    return res.json();
+  },
+
+  getV2WalkForwardFolds: async (): Promise<any> => {
+    const res = await fetch(`${API_BASE}/api/v2/walk-forward/folds`);
+    if (!res.ok) throw new Error('Failed to fetch walk-forward folds');
+    return res.json();
+  },
+
+  getV2Robustness: async (): Promise<V2RobustnessData> => {
+    const res = await fetch(`${API_BASE}/api/v2/robustness`);
+    if (!res.ok) throw new Error('Failed to fetch robustness data');
+    return res.json();
+  },
+
+  getV2ReportsManifest: async (): Promise<{ version: string; phases: V2PhaseInfo[] }> => {
+    const res = await fetch(`${API_BASE}/api/v2/reports/manifest`);
+    if (!res.ok) throw new Error('Failed to fetch research manifest');
+    return res.json();
+  },
+
+  getExportRobustnessUrl: () => `${API_BASE}/api/v2/export/robustness.csv`,
+  getExportWalkForwardUrl: () => `${API_BASE}/api/v2/export/walk-forward.csv`,
+  getExportInstitutionalBenchmarkUrl: () => `${API_BASE}/api/v2/export/institutional-benchmark.csv`,
+  getExportMasterBenchmarkUrl: () => `${API_BASE}/api/v2/export/master-benchmark.csv`,
+  getExportV2EvaluationHistoryUrl: () => `${API_BASE}/api/v2/export/evaluation-history.csv`,
+
+  getV2EvaluationHistory: async (): Promise<EvaluationHistoryPoint[]> => {
+    const res = await fetch(`${API_BASE}/api/v2/evaluation/history`);
+    if (!res.ok) throw new Error('Failed to fetch v2 evaluation history');
+    return res.json();
+  },
+
+  getV2Benchmark: async (): Promise<{ benchmark: any[] }> => {
+    const res = await fetch(`${API_BASE}/api/v2/benchmark`);
+    if (!res.ok) throw new Error('Failed to fetch master benchmark');
+    return res.json();
+  },
+
+  getV2InstitutionalBenchmark: async (): Promise<{ benchmark: any[] }> => {
+    const res = await fetch(`${API_BASE}/api/v2/institutional-benchmark`);
+    if (!res.ok) throw new Error('Failed to fetch institutional benchmark');
+    return res.json();
+  },
 };
+
+export interface V2AgentInfo {
+  id: string;
+  name: string;
+  category: string;
+  action_space: string;
+  description: string;
+  checkpoint: string | null;
+  status: string;
+}
+
+export interface V2WalkForwardSummaryItem {
+  strategy: string;
+  mean_return_pct: number;
+  std_return_pct: number;
+  mean_volatility_pct: number;
+  mean_sharpe: number;
+  mean_max_drawdown_pct: number;
+  mean_turnover: number;
+  total_trades: number;
+  total_friction_inr: number;
+}
+
+export interface V2RobustnessData {
+  cost_sensitivity: Array<{
+    strategy: string;
+    quoted_spread_pct: number;
+    half_spread_pct: number;
+    impact_coefficient: number;
+    total_return_pct: number;
+    annualized_volatility_pct: number;
+    sharpe_ratio: number;
+    max_drawdown_pct: number;
+    total_friction_inr: number;
+    grid_type: string;
+  }>;
+  regime_stress_tests: Array<{
+    strategy: string;
+    regime: string;
+    regime_description: string;
+    is_synthetic: boolean;
+    total_return_pct: number;
+    max_drawdown_pct: number;
+    days_in_regime: number;
+  }>;
+  bootstrap_confidence_intervals: Array<{
+    strategy: string;
+    observed_return_pct: number;
+    boot_return_mean_pct: number;
+    boot_return_ci_lower_pct: number;
+    boot_return_ci_upper_pct: number;
+    observed_volatility_pct: number;
+    boot_vol_ci_lower_pct: number;
+    boot_vol_ci_upper_pct: number;
+    observed_sharpe: number;
+    boot_sharpe_ci_lower: number;
+    boot_sharpe_ci_upper: number;
+  }>;
+  ablation_reward_and_risk: Array<{
+    ablation_category: string;
+    ablation_variant: string;
+    total_return_pct: number;
+    annualized_volatility_pct: number;
+    sharpe_ratio: number;
+    max_drawdown_pct: number;
+    total_friction_inr: number;
+  }>;
+}
+
+export interface V2PhaseInfo {
+  phase_id: string;
+  title: string;
+  exists: boolean;
+  report_file: string;
+  report_exists: boolean;
+  artifacts_count: number;
+  artifacts: string[];
+}
+

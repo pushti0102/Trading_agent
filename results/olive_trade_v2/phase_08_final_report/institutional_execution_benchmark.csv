@@ -1,0 +1,11 @@
+strategy,regime,action_space,initial_equity,final_equity,total_return_pct,annualized_volatility_pct,sharpe_ratio,max_drawdown_pct,trades_count,friction_paid_inr
+PPO Continuous Trader,Institutional Liquid (Spread 0.2%),Continuous weights,100000.0,107630.00,7.63,9.30,0.86,-5.46,508,375.46
+Continuous RL + Risk Parity Ensemble,Institutional Liquid (Spread 0.2%),Continuous weights,100000.0,106260.00,6.26,8.32,0.68,-4.87,695,507.51
+Risk Parity Agent,Institutional Liquid (Spread 0.2%),Continuous weights,100000.0,104010.00,4.01,7.01,0.28,-4.15,1033,874.24
+Volatility Targeting Agent,Institutional Liquid (Spread 0.2%),Continuous weights,100000.0,102090.00,2.09,2.83,-0.51,-1.55,623,473.40
+Buy & Hold Benchmark,Institutional Liquid (Spread 0.2%),Continuous weights,100000.0,100280.00,0.28,0.40,-11.41,-0.07,93,79.31
+PPO Continuous Trader,DMA / Maker Rebates (Spread 0.1%),Continuous weights,100000.0,107700.00,7.70,9.31,0.87,-5.47,509,274.04
+Continuous RL + Risk Parity Ensemble,DMA / Maker Rebates (Spread 0.1%),Continuous weights,100000.0,106380.00,6.38,8.32,0.71,-4.87,699,369.09
+Risk Parity Agent,DMA / Maker Rebates (Spread 0.1%),Continuous weights,100000.0,104340.00,4.34,7.00,0.35,-4.08,1036,634.50
+Volatility Targeting Agent,DMA / Maker Rebates (Spread 0.1%),Continuous weights,100000.0,102210.00,2.21,2.83,-0.44,-1.53,621,340.31
+Buy & Hold Benchmark,DMA / Maker Rebates (Spread 0.1%),Continuous weights,100000.0,100290.00,0.29,0.41,-10.98,-0.07,93,58.13

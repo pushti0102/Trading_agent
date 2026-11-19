@@ -1,0 +1,33 @@
+{
+  "PPO": {
+    "name": "PPO",
+    "algorithm": "PPO",
+    "learning_rate": 0.0003,
+    "n_steps": 64,
+    "batch_size": 32,
+    "gamma": 0.99,
+    "seed": 42
+  },
+  "A2C": {
+    "name": "A2C",
+    "algorithm": "A2C",
+    "learning_rate": 0.0007,
+    "n_steps": 16,
+    "gamma": 0.99,
+    "seed": 42
+  },
+  "DDPG": {
+    "name": "DDPG",
+    "algorithm": "DDPG",
+    "learning_rate": 0.001,
+    "buffer_size": 5000,
+    "batch_size": 64,
+    "gamma": 0.99,
+    "noise_sigma": 0.1,
+    "seed": 42
+  },
+  "reward_mode": "log_return_turnover_penalty",
+  "turnover_penalty_coef": 0.002,
+  "cash_reserve_floor": 0.05,
+  "max_position_fraction": 0.2
+}

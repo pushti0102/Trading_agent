@@ -1,0 +1,20 @@
+{
+  "PPO": {
+    "mean_total_exposure": 4.704090118408203,
+    "max_single_stock_weight": 0.9614377617835999,
+    "mean_cash_fraction": -3.704090118408203,
+    "active_positions_count": 23
+  },
+  "A2C": {
+    "mean_total_exposure": 14.747695922851562,
+    "max_single_stock_weight": 1.0,
+    "mean_cash_fraction": -13.747695922851562,
+    "active_positions_count": 23
+  },
+  "DDPG": {
+    "mean_total_exposure": 20.426185607910156,
+    "max_single_stock_weight": 1.0,
+    "mean_cash_fraction": -19.426185607910156,
+    "active_positions_count": 33
+  }
+}

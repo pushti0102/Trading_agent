@@ -1,0 +1,37 @@
+{
+  "phase": "phase_07_robustness",
+  "date": "2026-10-29",
+  "eval_period": {
+    "start": "2017-05-29",
+    "end": "2017-12-29",
+    "trading_days": 149
+  },
+  "quoted_spread_grid": [
+    0.001,
+    0.005,
+    0.01,
+    0.02,
+    0.03
+  ],
+  "half_spread_grid": [
+    0.0005,
+    0.0025,
+    0.005,
+    0.01,
+    0.015
+  ],
+  "impact_grid": [
+    0.0001,
+    0.0005,
+    0.001,
+    0.002
+  ],
+  "bootstrap_settings": {
+    "n_bootstraps": 1000,
+    "block_size_days": 10
+  },
+  "num_cost_experiments": 48,
+  "num_regime_experiments": 24,
+  "num_bootstrapped_strategies": 6,
+  "num_ablation_experiments": 7
+}

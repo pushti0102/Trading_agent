@@ -1,0 +1,20 @@
+{
+  "action_modes": [
+    "continuous",
+    "discrete"
+  ],
+  "observation_modes": [
+    "flattened",
+    "single_stock"
+  ],
+  "state_size_per_stock": 10,
+  "total_stocks": 40,
+  "continuous_obs_dim": 400,
+  "continuous_action_dim": 40,
+  "cash_reserve_fraction": 0.05,
+  "max_position_fraction": 0.2,
+  "quoted_spread": 0.02,
+  "half_spread": 0.01,
+  "impact_coefficient": 0.0005,
+  "transaction_fee_rate": 0.001
+}

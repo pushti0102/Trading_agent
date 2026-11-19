@@ -1,0 +1,12 @@
+{
+  "train_dates_count": 346,
+  "test_dates_count": 149,
+  "normalizer_feature_dim": 400,
+  "test_initial_cash": 100000.0,
+  "test_final_portfolio_value": 102492.002671425,
+  "test_total_return_pct": 2.4920026714249977,
+  "test_total_trades": 133,
+  "test_total_fees_paid": 60.11670357499999,
+  "min_cash_observed": 81886.48059397501,
+  "cash_reserve_respected": true
+}

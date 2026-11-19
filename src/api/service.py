@@ -24,6 +24,22 @@ CASH_RESERVE_FRACTION = 0.05
 MAX_POSITION_FRACTION = 0.20
 
 
+def sanitize_for_json(obj: Any) -> Any:
+    """Recursively converts NaN, Infinity, and -Infinity to None for strict JSON compliance."""
+    if isinstance(obj, float):
+        if np.isnan(obj) or np.isinf(obj):
+            return None
+        return float(obj)
+    elif isinstance(obj, (np.floating, np.integer)):
+        val = float(obj)
+        return None if (np.isnan(val) or np.isinf(val)) else val
+    elif isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_for_json(x) for x in obj]
+    return obj
+
+
 def calculate_affordable_quantity(env: MarketEnvironment, agent_id: str, symbol: str, side: str, requested: int, price: float) -> int:
     requested = min(int(requested), int(env.execution_engine.max_order_size))
     if requested <= 0 or price <= 0:
@@ -275,7 +291,9 @@ class SimulatorService:
                 "cash_reserve_pct": 5.0,
                 "max_position_pct": 20.0
             },
-            "summary": records
+            "summary": records,
+            "institutional_benchmark": self.get_v2_institutional_benchmark(),
+            "master_benchmark": self.get_v2_master_benchmark(),
         }
 
     def get_evaluation_history(self) -> List[Dict[str, Any]]:
@@ -720,5 +738,263 @@ class SimulatorService:
         }
 
 
+    # =========================================================================
+    # OliveTrade 2.0 Multi-Agent Research Platform Methods
+    # =========================================================================
+    def get_v2_agents(self) -> List[Dict[str, Any]]:
+        """Return registry of all 15 agents across discrete and continuous spaces."""
+        return [
+            {
+                "id": "buy_hold",
+                "name": "Buy & Hold Benchmark",
+                "category": "Benchmark",
+                "action_space": "Continuous (equal weight)",
+                "description": "Equal-weighted passive allocation across liquid NSE universe (normalized V0=₹100k).",
+                "checkpoint": None,
+                "status": "active"
+            },
+            {
+                "id": "stackelberg_leader",
+                "name": "Stackelberg Leader",
+                "category": "Game-Theoretic",
+                "action_space": "Discrete (3 actions / stock)",
+                "description": "First-mover institutional trader optimizing against follower reaction via mean-reversion.",
+                "checkpoint": None,
+                "status": "active"
+            },
+            {
+                "id": "momentum_follower",
+                "name": "Momentum Follower",
+                "category": "Game-Theoretic",
+                "action_space": "Discrete (3 actions / stock)",
+                "description": "Second-mover reactive trader following leader signals and price breakouts.",
+                "checkpoint": None,
+                "status": "active"
+            },
+            {
+                "id": "stackelberg_best_response",
+                "name": "Stackelberg Best Response",
+                "category": "Game-Theoretic",
+                "action_space": "Discrete (3 actions / stock)",
+                "description": "Dynamic game-theoretic follower best response computed under transaction cost awareness.",
+                "checkpoint": None,
+                "status": "active"
+            },
+            {
+                "id": "dqn_baseline",
+                "name": "DQN Baseline Trader",
+                "category": "Deep RL",
+                "action_space": "Discrete (3 actions)",
+                "description": "Historical 3-layer MLP Deep Q-Network benchmark with experience replay.",
+                "checkpoint": "models/dqn_trader.pt",
+                "status": "active" if MODEL_PATH.exists() else "unfitted"
+            },
+            {
+                "id": "double_dueling_dqn",
+                "name": "Double Dueling DQN with PER",
+                "category": "Deep RL",
+                "action_space": "Discrete (3 actions)",
+                "description": "Decoupled value/advantage streams, Double Q target estimation, and Prioritized Experience Replay (SumTree).",
+                "checkpoint": "results/olive_trade_v2/phase_03_baselines/double_dueling_dqn_trader.pt",
+                "status": "active" if (BASE_DIR / "results/olive_trade_v2/phase_03_baselines/double_dueling_dqn_trader.pt").exists() else "unfitted"
+            },
+            {
+                "id": "mean_reversion",
+                "name": "Mean Reversion Agent",
+                "category": "Rule-Based",
+                "action_space": "Continuous weights",
+                "description": "Allocates capital inversely proportional to recent rolling price-to-fundamental divergence.",
+                "checkpoint": None,
+                "status": "active"
+            },
+            {
+                "id": "volatility_targeting",
+                "name": "Volatility Targeting Agent",
+                "category": "Rule-Based",
+                "action_space": "Continuous weights",
+                "description": "Dynamically scales gross portfolio exposure to target 12% annualized portfolio volatility.",
+                "checkpoint": None,
+                "status": "active"
+            },
+            {
+                "id": "risk_parity",
+                "name": "Risk Parity Agent",
+                "category": "Rule-Based",
+                "action_space": "Continuous weights",
+                "description": "Weights assets inversely proportional to realized variance so each stock contributes equal marginal risk.",
+                "checkpoint": None,
+                "status": "active"
+            },
+            {
+                "id": "ppo_trader",
+                "name": "PPO Continuous Trader",
+                "category": "Continuous RL",
+                "action_space": "Continuous weights (40 stocks)",
+                "description": "Stable-Baselines3 Proximal Policy Optimization with clipped surrogate objective and Generalized Advantage Estimation (GAE).",
+                "checkpoint": "results/olive_trade_v2/phase_04_rl_agents/checkpoints/ppo_model.zip",
+                "status": "active" if (BASE_DIR / "results/olive_trade_v2/phase_04_rl_agents/checkpoints/ppo_model.zip").exists() else "unfitted"
+            },
+            {
+                "id": "a2c_trader",
+                "name": "A2C Continuous Trader",
+                "category": "Continuous RL",
+                "action_space": "Continuous weights (40 stocks)",
+                "description": "Advantage Actor-Critic with synchronous gradient updates and entropy regularization.",
+                "checkpoint": "results/olive_trade_v2/phase_04_rl_agents/checkpoints/a2c_model.zip",
+                "status": "active" if (BASE_DIR / "results/olive_trade_v2/phase_04_rl_agents/checkpoints/a2c_model.zip").exists() else "unfitted"
+            },
+            {
+                "id": "ddpg_trader",
+                "name": "DDPG Continuous Trader",
+                "category": "Continuous RL",
+                "action_space": "Continuous weights (40 stocks)",
+                "description": "Deep Deterministic Policy Gradient with Ornstein-Uhlenbeck action noise and target network Polyak averaging.",
+                "checkpoint": "results/olive_trade_v2/phase_04_rl_agents/checkpoints/ddpg_model.zip",
+                "status": "active" if (BASE_DIR / "results/olive_trade_v2/phase_04_rl_agents/checkpoints/ddpg_model.zip").exists() else "unfitted"
+            },
+            {
+                "id": "equal_weight_ensemble",
+                "name": "Equal-Weight Ensemble",
+                "category": "Ensemble",
+                "action_space": "Continuous weights",
+                "description": "1/M convex combination of diverse quantitative strategies.",
+                "checkpoint": None,
+                "status": "active"
+            },
+            {
+                "id": "validation_weighted_ensemble",
+                "name": "Validation-Weighted Ensemble",
+                "category": "Ensemble",
+                "action_space": "Continuous weights",
+                "description": "Calibrated on out-of-fold development Sharpe ratios with L2 shrinkage regularization (zero holdout leakage).",
+                "checkpoint": "results/olive_trade_v2/phase_05_ensembles/ensemble_metadata.json",
+                "status": "active"
+            },
+            {
+                "id": "regime_aware_ensemble",
+                "name": "Regime-Aware Ensemble",
+                "category": "Ensemble",
+                "action_space": "Continuous weights",
+                "description": "Dynamic online regime detection (trend strength + realized volatility) allocating between momentum, mean reversion, and cash.",
+                "checkpoint": None,
+                "status": "active"
+            }
+        ]
+
+    @staticmethod
+    def _clean_df_records(df: pd.DataFrame) -> List[Dict[str, Any]]:
+        """Convert DataFrame to JSON-compliant dictionary records with NaN/Inf mapped to None."""
+        if df.empty:
+            return []
+        raw = df.to_dict(orient="records")
+        return sanitize_for_json(raw)
+
+    def get_v2_walk_forward_folds(self) -> Dict[str, Any]:
+        """Return expanding-window walk-forward folds and per-fold performance."""
+        manifest_path = BASE_DIR / "results/olive_trade_v2/phase_06_walk_forward/walk_forward_folds_manifest.json"
+        per_fold_path = BASE_DIR / "results/olive_trade_v2/phase_06_walk_forward/walk_forward_per_fold_seed.csv"
+
+        manifest_data = {}
+        if manifest_path.exists():
+            import json
+            with open(manifest_path, "r") as f:
+                manifest_data = sanitize_for_json(json.load(f))
+
+        records = []
+        if per_fold_path.exists():
+            df = pd.read_csv(per_fold_path)
+            records = self._clean_df_records(df)
+
+        return {
+            "manifest": manifest_data,
+            "records": records,
+            "total_records": len(records)
+        }
+
+    def get_v2_walk_forward_summary(self) -> Dict[str, Any]:
+        """Return aggregate walk-forward benchmark across all folds and seeds."""
+        agg_path = BASE_DIR / "results/olive_trade_v2/phase_06_walk_forward/walk_forward_aggregate_summary.csv"
+        if not agg_path.exists():
+            return {"summary": []}
+        df = pd.read_csv(agg_path)
+        return {"summary": self._clean_df_records(df)}
+
+    def get_v2_robustness_data(self) -> Dict[str, Any]:
+        """Return cost sensitivity grids, regime stress tests, and bootstrap confidence intervals."""
+        r_dir = BASE_DIR / "results/olive_trade_v2/phase_07_robustness"
+        
+        cost_df = pd.read_csv(r_dir / "cost_sensitivity.csv") if (r_dir / "cost_sensitivity.csv").exists() else pd.DataFrame()
+        regime_df = pd.read_csv(r_dir / "regime_stress_tests.csv") if (r_dir / "regime_stress_tests.csv").exists() else pd.DataFrame()
+        boot_df = pd.read_csv(r_dir / "bootstrap_confidence_intervals.csv") if (r_dir / "bootstrap_confidence_intervals.csv").exists() else pd.DataFrame()
+        ablation_df = pd.read_csv(r_dir / "ablation_reward_and_risk.csv") if (r_dir / "ablation_reward_and_risk.csv").exists() else pd.DataFrame()
+
+        return {
+            "cost_sensitivity": self._clean_df_records(cost_df),
+            "regime_stress_tests": self._clean_df_records(regime_df),
+            "bootstrap_confidence_intervals": self._clean_df_records(boot_df),
+            "ablation_reward_and_risk": self._clean_df_records(ablation_df),
+        }
+
+    def get_v2_reports_manifest(self) -> Dict[str, Any]:
+        """Return master versioned research phase directory status."""
+        v2_root = BASE_DIR / "results/olive_trade_v2"
+        phases = [
+            ("phase_01_audit", "System Audit & Baseline Freeze", "audit_report.md"),
+            ("phase_02_environment", "Unified Gymnasium Trading Environment", "phase_02_report.md"),
+            ("phase_03_baselines", "Rule-Based & Double Dueling DQN Baselines", "phase_03_report.md"),
+            ("phase_04_rl_agents", "Continuous RL Agents (PPO, A2C, DDPG)", "phase_04_report.md"),
+            ("phase_05_risk_management", "Portfolio Reward Functions & Risk Overlay", "phase_05_report.md"),
+            ("phase_05_ensembles", "Equal-Weight, Validation-Weighted & Regime Ensembles", "phase_06_report.md"),
+            ("phase_06_walk_forward", "Chronological Walk-Forward & Financial Analytics", "phase_06_walk_forward_report.md"),
+            ("phase_07_robustness", "Robustness, Cost Sensitivity & Regime Stress Tests", "phase_07_robustness_report.md"),
+            ("phase_08_final_report", "Master Academic Research Report & Reproducibility", "RESEARCH_REPORT.md"),
+        ]
+
+        manifest = []
+        for folder, title, report_file in phases:
+            p_dir = v2_root / folder
+            exists = p_dir.exists()
+            report_exists = (p_dir / report_file).exists() if exists else False
+            files = [f.name for f in p_dir.iterdir() if f.is_file()] if exists else []
+            manifest.append({
+                "phase_id": folder,
+                "title": title,
+                "exists": exists,
+                "report_file": report_file,
+                "report_exists": report_exists,
+                "artifacts_count": len(files),
+                "artifacts": files
+            })
+
+        return {"version": "OliveTrade 2.0", "phases": manifest}
+
+    def get_v2_evaluation_history(self) -> List[Dict[str, Any]]:
+        """Return daily portfolio values for all continuous RL, ensemble, and baseline agents."""
+        csv_path = BASE_DIR / "results/olive_trade_v2/phase_08_final_report/v2_evaluation_history.csv"
+        if not csv_path.exists():
+            return self.get_evaluation_history()
+
+        df = pd.read_csv(csv_path)
+        return self._clean_df_records(df)
+
+    def get_v2_master_benchmark(self) -> List[Dict[str, Any]]:
+        """Return 15-strategy master benchmark comparison."""
+        csv_path = BASE_DIR / "results/olive_trade_v2/phase_08_final_report/master_strategy_benchmark.csv"
+        if not csv_path.exists():
+            return []
+        df = pd.read_csv(csv_path)
+        return self._clean_df_records(df)
+
+    def get_v2_institutional_benchmark(self) -> List[Dict[str, Any]]:
+        """Return realistic institutional execution regime benchmark (0.1% - 0.2% spread)."""
+        csv_path = BASE_DIR / "results/olive_trade_v2/phase_08_final_report/institutional_execution_benchmark.csv"
+        if not csv_path.exists():
+            return []
+        df = pd.read_csv(csv_path)
+        return self._clean_df_records(df)
+
+
+
 # Singleton service instance
 simulator_service = SimulatorService()
+

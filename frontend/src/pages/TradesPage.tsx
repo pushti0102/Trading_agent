@@ -17,6 +17,7 @@ import { EmptyState } from '../components/EmptyState';
 export const TradesPage: React.FC = () => {
   const [data, setData] = useState<TradesResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [stocks, setStocks] = useState<string[]>([]);
 
   // Filters state
   const [selectedAgent, setSelectedAgent] = useState<string>('all');
@@ -26,6 +27,12 @@ export const TradesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [page, setPage] = useState<number>(1);
   const pageSize = 50;
+
+  useEffect(() => {
+    api.getMarketStocks()
+      .then((items) => setStocks(items.map((s) => s.symbol).sort()))
+      .catch((err) => console.error('Failed to load stock symbols:', err));
+  }, []);
 
   useEffect(() => {
     loadTrades();
@@ -66,18 +73,6 @@ export const TradesPage: React.FC = () => {
     setPage(1);
   };
 
-  const stocks = [
-    'ICICIBANK',
-    'INFY',
-    'ITC',
-    'MARUTI',
-    'RELIANCE',
-    'SBIN',
-    'SUNPHARMA',
-    'TATAMOTORS',
-    'TATASTEEL',
-    'TCS',
-  ];
 
   return (
     <div className="space-y-6">
@@ -129,11 +124,18 @@ export const TradesPage: React.FC = () => {
               onChange={(e) => { setSelectedAgent(e.target.value); setPage(1); }}
               className="w-full px-2.5 py-1.5 text-xs bg-cream-50 border border-borderBase rounded-lg text-charcoal focus:outline-none focus:border-olive-500"
             >
-              <option value="all">All Agents</option>
-              <option value="rl_trader">RL Trader (DQN)</option>
-              <option value="leader">Stackelberg Leader</option>
+              <option value="all">All Agents (15)</option>
+              <option value="ppo_trader">PPO Continuous RL (+7.63%)</option>
+              <option value="ensemble">RL + Risk Parity Ensemble (+6.26%)</option>
+              <option value="risk_parity">Risk Parity Agent (+4.01%)</option>
+              <option value="vol_targeting">Volatility Targeting (+2.09%)</option>
+              <option value="leader">Stackelberg Leader (+2.49%)</option>
+              <option value="buy_hold">Buy & Hold (+0.28%)</option>
+              <option value="a2c_trader">A2C Continuous RL</option>
+              <option value="ddpg_trader">DDPG Continuous RL</option>
+              <option value="double_dueling_dqn">Double Dueling DQN</option>
+              <option value="rl_trader">DQN Baseline</option>
               <option value="momentum">Momentum Follower</option>
-              <option value="buy_hold">Buy & Hold</option>
             </select>
           </div>
 

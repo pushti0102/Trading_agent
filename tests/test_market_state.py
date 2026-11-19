@@ -29,7 +29,7 @@ for key in required:
     print(f"{key}: {state[key]}")
 
 assert all(key in state for key in required)
-assert len(env.observe("leader")["stocks"]) == 10
+assert len(env.observe("leader")["stocks"]) == 40
 
 print("\nPASS: All 10 state variables are present")
-print("PASS: All 10 stocks are available")
+print("PASS: All 40 stocks are available")

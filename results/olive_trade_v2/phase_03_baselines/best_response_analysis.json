@@ -1,0 +1,8 @@
+{
+  "leader_utility_definition": "Expected price reversion minus quoted half-spread and impact plus follower demand impact",
+  "follower_reaction_definition": "Follower reacts with BUY if leader BUY and return >= 0; reacts with SELL if leader SELL",
+  "equilibrium_solution_method": "Subgame perfection via backward induction on finite action set {BUY, HOLD, SELL} across 40 assets",
+  "holdout_return_pct": 3.84845151875004,
+  "holdout_sharpe": 0.35272946348197515,
+  "holdout_trades": 469
+}

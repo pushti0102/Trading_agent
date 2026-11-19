@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from typing import Optional
+from pathlib import Path
 import io
 import pandas as pd
 
@@ -57,17 +58,21 @@ def get_overview():
     eval_summary = simulator_service.get_evaluation_summary()
     stocks = simulator_service.get_market_stocks()
     recent_trades = simulator_service.get_trades(page=1, page_size=10)["items"]
+    inst_benchmark = simulator_service.get_v2_institutional_benchmark()
+    master_benchmark = simulator_service.get_v2_master_benchmark()
 
     # Calculate overall best return and leaderboard
     summary_list = eval_summary.get("summary", [])
     best_strategy = summary_list[0] if summary_list else None
 
     # Key metric cards based on the holdout evaluation
-    # Let's find RL Trader and Leader metrics
     rl_agent = next((s for s in summary_list if s["agent"] == "rl_trader"), None)
     leader_agent = next((s for s in summary_list if s["agent"] == "leader"), None)
     momentum_agent = next((s for s in summary_list if s["agent"] == "momentum"), None)
     buy_hold_agent = next((s for s in summary_list if s["agent"] == "buy_hold"), None)
+
+    ppo_inst = next((s for s in inst_benchmark if "PPO" in s.get("strategy", "") and "0.2%" in s.get("regime", "")), None)
+    ensemble_inst = next((s for s in inst_benchmark if "Ensemble" in s.get("strategy", "") and "0.2%" in s.get("regime", "")), None)
 
     return {
         "dataset_period": {
@@ -84,7 +89,11 @@ def get_overview():
             "leader": leader_agent,
             "momentum": momentum_agent,
             "buy_hold": buy_hold_agent,
+            "ppo_trader": ppo_inst,
+            "ensemble": ensemble_inst,
         },
+        "institutional_benchmark": inst_benchmark,
+        "master_benchmark": master_benchmark,
         "leaderboard": summary_list,
         "recent_trades": recent_trades,
         "market_snapshot": stocks[:6],
@@ -283,3 +292,139 @@ def export_evaluation_csv():
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=olivetrade_evaluation_summary.csv"}
     )
+
+
+# =============================================================================
+# OliveTrade 2.0 Research API Endpoints
+# =============================================================================
+
+@app.get("/api/v2/agents")
+def get_v2_agents():
+    """Return all 15 discrete and continuous agents in OliveTrade 2.0."""
+    return {"agents": simulator_service.get_v2_agents()}
+
+
+@app.get("/api/v2/walk-forward/folds")
+def get_v2_walk_forward_folds():
+    """Return walk-forward expanding folds, training boundaries, and per-fold performance."""
+    return simulator_service.get_v2_walk_forward_folds()
+
+
+@app.get("/api/v2/walk-forward/summary")
+def get_v2_walk_forward_summary():
+    """Return aggregate multi-fold walk-forward metrics across all seeds."""
+    return simulator_service.get_v2_walk_forward_summary()
+
+
+@app.get("/api/v2/robustness")
+def get_v2_robustness():
+    """Return cost sensitivity grids, regime stress tests, and bootstrap confidence intervals."""
+    return simulator_service.get_v2_robustness_data()
+
+
+@app.get("/api/v2/reports/manifest")
+def get_v2_reports_manifest():
+    """Return status and artifacts manifest for all research phases (Phase 1-8)."""
+    return simulator_service.get_v2_reports_manifest()
+
+
+@app.get("/api/v2/export/robustness.csv")
+def export_robustness_csv():
+    """Export transaction-cost sensitivity grid results as CSV."""
+    r_dir = simulator_service.feed_data
+    csv_path = Path("results/olive_trade_v2/phase_07_robustness/cost_sensitivity.csv")
+    if not csv_path.exists():
+        raise HTTPException(status_code=404, detail="Robustness cost sensitivity results not found")
+    df = pd.read_csv(csv_path)
+    stream = io.StringIO()
+    df.to_csv(stream, index=False)
+    return Response(
+        content=stream.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=olivetrade_cost_sensitivity.csv"}
+    )
+
+
+@app.get("/api/v2/export/walk-forward.csv")
+def export_walk_forward_csv():
+    """Export walk-forward aggregate benchmark metrics as CSV."""
+    csv_path = Path("results/olive_trade_v2/phase_06_walk_forward/walk_forward_aggregate_summary.csv")
+    if not csv_path.exists():
+        raise HTTPException(status_code=404, detail="Walk-forward summary results not found")
+    df = pd.read_csv(csv_path)
+    stream = io.StringIO()
+    df.to_csv(stream, index=False)
+    return Response(
+        content=stream.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=olivetrade_walk_forward_benchmark.csv"}
+    )
+
+
+@app.get("/api/v2/evaluation/history")
+def get_v2_evaluation_history():
+    """Return daily portfolio values for all continuous RL, ensemble, and baseline agents."""
+    return simulator_service.get_v2_evaluation_history()
+
+
+@app.get("/api/v2/benchmark")
+def get_v2_benchmark():
+    """Return 15-model master benchmark dataset."""
+    return {"benchmark": simulator_service.get_v2_master_benchmark()}
+
+
+@app.get("/api/v2/institutional-benchmark")
+def get_v2_institutional_benchmark():
+    """Return realistic institutional execution regime benchmark."""
+    return {"benchmark": simulator_service.get_v2_institutional_benchmark()}
+
+
+@app.get("/api/v2/export/institutional-benchmark.csv")
+def export_institutional_benchmark_csv():
+    """Export realistic institutional execution benchmark results as CSV."""
+    csv_path = Path("results/olive_trade_v2/phase_08_final_report/institutional_execution_benchmark.csv")
+    if not csv_path.exists():
+        raise HTTPException(status_code=404, detail="Institutional benchmark results not found")
+    df = pd.read_csv(csv_path)
+    stream = io.StringIO()
+    df.to_csv(stream, index=False)
+    return Response(
+        content=stream.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=olivetrade_institutional_benchmark.csv"}
+    )
+
+
+@app.get("/api/v2/export/master-benchmark.csv")
+def export_master_benchmark_csv():
+    """Export 15-strategy master benchmark results as CSV."""
+    csv_path = Path("results/olive_trade_v2/phase_08_final_report/master_strategy_benchmark.csv")
+    if not csv_path.exists():
+        raise HTTPException(status_code=404, detail="Master benchmark results not found")
+    df = pd.read_csv(csv_path)
+    stream = io.StringIO()
+    df.to_csv(stream, index=False)
+    return Response(
+        content=stream.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=olivetrade_master_benchmark.csv"}
+    )
+
+
+@app.get("/api/v2/export/evaluation-history.csv")
+def export_v2_evaluation_history_csv():
+    """Export 149-day holdout equity curves for all continuous RL and ensemble agents as CSV."""
+    csv_path = Path("results/olive_trade_v2/phase_08_final_report/v2_evaluation_history.csv")
+    if not csv_path.exists():
+        raise HTTPException(status_code=404, detail="V2 evaluation history not found")
+    df = pd.read_csv(csv_path)
+    stream = io.StringIO()
+    df.to_csv(stream, index=False)
+    return Response(
+        content=stream.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=olivetrade_v2_evaluation_history.csv"}
+    )
+
+
+

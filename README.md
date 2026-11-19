@@ -15,7 +15,7 @@
 ```mermaid
 graph TD
     subgraph Data Layer
-        A[selected_stocks.csv<br/>10 NSE Stocks, 495 Days] --> B[HistoricalMarketFeed]
+        A[selected_stocks.csv<br/>40 NSE Stocks, 495 Days] --> B[HistoricalMarketFeed]
         B --> C[MarketEnvironment<br/>Rolling Volatility & 20d Fundamental Anchor]
     end
 
@@ -90,7 +90,7 @@ Open your browser to: **[http://localhost:5173/](http://localhost:5173/)**
 - **NSE Constituents Monitor**: Rapid overview of prices, 1-day returns, 20-day rolling volatilities, and daily turnover.
 
 ### 2. Market Explorer
-- **Stock Selector**: Switch between 10 major NSE constituents (`RELIANCE`, `SBIN`, `ICICIBANK`, `INFY`, `MARUTI`, `TATAMOTORS`, `ITC`, `TCS`, `TATASTEEL`, `SUNPHARMA`).
+- **Stock Selector**: Switch between 40 major NSE constituents (e.g. `RELIANCE`, `SBIN`, `ICICIBANK`, `INFY`, `HDFC`, `AXISBANK`, `TCS`, etc.).
 - **Interactive Replay Controls**: Play, Pause, Next Day stepping, Reset, and adjustable replay speeds (1x, 2x, 5x).
 - **Composed Chart**: Historical Close price with 20-day rolling Fundamental Anchor overlay alongside volume bars.
 

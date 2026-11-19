@@ -1,0 +1,23 @@
+{
+  "PPO": {
+    "training_time_sec": 9.006552457809448,
+    "timesteps": 1500,
+    "final_train_portfolio_value": 13130.407974375134,
+    "train_trades": 3136,
+    "train_fees": 5108.120600624992
+  },
+  "A2C": {
+    "training_time_sec": 8.021698713302612,
+    "timesteps": 1500,
+    "final_train_portfolio_value": 49682.308944275166,
+    "train_trades": 2031,
+    "train_fees": 3455.188430725001
+  },
+  "DDPG": {
+    "training_time_sec": 12.397782325744629,
+    "timesteps": 1500,
+    "final_train_portfolio_value": 75403.42014042506,
+    "train_trades": 1722,
+    "train_fees": 1911.980534575003
+  }
+}

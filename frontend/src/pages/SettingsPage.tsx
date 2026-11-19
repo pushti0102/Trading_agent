@@ -131,7 +131,7 @@ export const SettingsPage: React.FC = () => {
               <Database className="w-4 h-4 text-olive-600" />
               Dataset Specifications
             </h3>
-            <Badge variant="olive">NSE Selected 10</Badge>
+            <Badge variant="olive">NSE Selected 40</Badge>
           </div>
 
           <div className="space-y-2 text-xs">
@@ -141,21 +141,21 @@ export const SettingsPage: React.FC = () => {
             </div>
             <div className="flex items-center justify-between py-1.5 border-b border-cream-200">
               <span className="text-charcoal-muted">Selected Equities:</span>
-              <span className="font-mono font-semibold text-charcoal">10 High-Turnover Constituents</span>
+              <span className="font-mono font-semibold text-charcoal">40 High-Turnover Constituents (19,800 Rows)</span>
             </div>
             <div className="flex items-center justify-between py-1.5 border-b border-cream-200">
               <span className="text-charcoal-muted">Total Trading Dates:</span>
-              <span className="font-mono font-semibold text-charcoal">495 Daily Sessions</span>
+              <span className="font-mono font-semibold text-charcoal">495 Daily Sessions (All 40 stocks 100% complete)</span>
             </div>
             <div className="flex items-center justify-between py-1.5 border-b border-cream-200">
               <span className="text-charcoal-muted">Historical Span:</span>
               <span className="font-mono font-semibold text-charcoal">2016-01-01 through 2017-12-29</span>
             </div>
-            <div className="flex items-center justify-between py-1.5">
-              <span className="text-charcoal-muted">Constituents:</span>
-              <span className="font-mono text-[11px] text-olive-900 font-semibold">
-                ICICIBANK, INFY, ITC, MARUTI, RELIANCE, SBIN, SUNPHARMA, TATAMOTORS, TATASTEEL, TCS
-              </span>
+            <div className="py-1.5 space-y-1">
+              <span className="text-charcoal-muted block">40 Constituents:</span>
+              <div className="font-mono text-[10px] text-olive-900 font-medium leading-relaxed max-h-24 overflow-y-auto p-2 bg-cream-50 rounded border border-borderBase">
+                ADANIPORTS, AUROPHARMA, AXISBANK, BAJFINANCE, BANKBARODA, BHARTIARTL, BPCL, DLF, HCLTECH, HDFC, HDFCBANK, HEROMOTOCO, HINDALCO, HINDPETRO, HINDUNILVR, IBREALEST, IBULHSGFIN, ICICIBANK, INDUSINDBK, INFY, IOC, ITC, JETAIRWAYS, KOTAKBANK, LT, LUPIN, M&M, MARUTI, ONGC, PNB, RELCAPITAL, RELIANCE, RELINFRA, SBIN, SUNPHARMA, TATAMOTORS, TATASTEEL, TCS, VEDL, YESBANK
+              </div>
             </div>
           </div>
         </div>

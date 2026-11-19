@@ -1,0 +1,281 @@
+{
+  "system": "OliveTrade 2.0",
+  "phase": "01_audit_and_freeze",
+  "audit_timestamp": "2026-10-28T10:32:00Z",
+  "workspace_path": "d:/market-simulation",
+  "python_version": "3.11.4",
+  "platform": "Windows-10-10.0.26100-SP0",
+  "gpu_available": true,
+  "gpu_model": "NVIDIA GeForce RTX 3050 Laptop GPU (6GB)",
+  "dependencies": {
+    "torch": "2.14.1",
+    "stable-baselines3": "2.9.2",
+    "gymnasium": "1.4.0",
+    "pandas": "3.1.0",
+    "numpy": "2.4.6",
+    "fastapi": "0.162.0",
+    "uvicorn": "0.54.0",
+    "pytest": "9.2.0",
+    "scipy": "1.17.1",
+    "matplotlib": "3.11.2",
+    "pyarrow": "26.0.0"
+  },
+  "dataset": {
+    "data_path": "data/processed/selected_stocks.csv",
+    "total_rows": 19800,
+    "unique_symbols_count": 40,
+    "symbols": [
+      "ADANIPORTS", "AUROPHARMA", "AXISBANK", "BAJFINANCE", "BANKBARODA",
+      "BHARTIARTL", "BPCL", "DLF", "HCLTECH", "HDFC", "HDFCBANK",
+      "HEROMOTOCO", "HINDALCO", "HINDPETRO", "HINDUNILVR", "IBREALEST",
+      "IBULHSGFIN", "ICICIBANK", "INDUSINDBK", "INFY", "IOC", "ITC",
+      "JETAIRWAYS", "KOTAKBANK", "LT", "LUPIN", "M&M", "MARUTI", "ONGC",
+      "PNB", "RELCAPITAL", "RELIANCE", "RELINFRA", "SBIN", "SUNPHARMA",
+      "TATAMOTORS", "TATASTEEL", "TCS", "VEDL", "YESBANK"
+    ],
+    "total_dates": 495,
+    "date_start": "2016-01-01",
+    "date_end": "2017-12-29",
+    "missing_values": {
+      "OPEN": 0,
+      "HIGH": 0,
+      "LOW": 0,
+      "CLOSE": 0,
+      "TOTTRDQTY": 0,
+      "TOTTRDVAL": 0,
+      "RETURN": 40
+    },
+    "split_protocol": {
+      "type": "chronological_70_30",
+      "train_dates_count": 346,
+      "train_start": "2016-01-01",
+      "train_end": "2017-05-26",
+      "holdout_dates_count": 149,
+      "holdout_start": "2017-05-29",
+      "holdout_end": "2017-12-29"
+    }
+  },
+  "observation_space": {
+    "dimension": 10,
+    "type": "Box(-inf, inf, (10,), float32)",
+    "feature_definitions": [
+      {
+        "index": 0,
+        "name": "valuation_spread",
+        "formula": "np.clip(price / fundamental_value - 1.0, -1.0, 1.0)",
+        "meaning": "Normalized divergence from 20-day rolling close mean"
+      },
+      {
+        "index": 1,
+        "name": "daily_return",
+        "formula": "np.clip(return, -0.2, 0.2)",
+        "meaning": "1-day close-to-close return clipped to [-20%, +20%]"
+      },
+      {
+        "index": 2,
+        "name": "log_volume",
+        "formula": "np.log1p(volume) / 20.0",
+        "meaning": "Log-scaled trading volume"
+      },
+      {
+        "index": 3,
+        "name": "spread",
+        "formula": "float(spread)",
+        "meaning": "Simulated fractional quoted bid-ask spread (0.02)"
+      },
+      {
+        "index": 4,
+        "name": "log_liquidity",
+        "formula": "np.log1p(turnover) / 30.0",
+        "meaning": "Log-scaled turnover value in INR"
+      },
+      {
+        "index": 5,
+        "name": "volatility",
+        "formula": "np.clip(volatility, 0.0, 0.2)",
+        "meaning": "20-day rolling daily return standard deviation clipped to [0, 0.2]"
+      },
+      {
+        "index": 6,
+        "name": "order_imbalance",
+        "formula": "net_order_quantity / total_order_quantity",
+        "meaning": "Daily simulated order imbalance in [-1.0, 1.0]"
+      },
+      {
+        "index": 7,
+        "name": "normalized_inventory",
+        "formula": "inventory / max_order_size",
+        "meaning": "Current stock inventory normalized by max order size (100)"
+      },
+      {
+        "index": 8,
+        "name": "cash_fraction",
+        "formula": "cash / initial_cash",
+        "meaning": "Current cash balance relative to starting capital (100,000)"
+      },
+      {
+        "index": 9,
+        "name": "stock_exposure",
+        "formula": "(inventory * price) / portfolio_value",
+        "meaning": "Current mark-to-market weight of the stock in total equity"
+      }
+    ]
+  },
+  "action_space": {
+    "type": "Discrete(3)",
+    "actions": {
+      "0": "BUY (5 shares)",
+      "1": "HOLD (0 shares)",
+      "2": "SELL (5 shares if inventory >= 5, else HOLD)"
+    },
+    "fixed_order_size": 5,
+    "max_order_size": 100
+  },
+  "friction_and_accounting": {
+    "initial_capital": 100000.0,
+    "currency": "INR",
+    "quoted_spread": 0.02,
+    "half_spread": 0.01,
+    "impact_coefficient": 0.0005,
+    "transaction_fee_rate": 0.001,
+    "cash_reserve_floor": 0.05,
+    "max_position_fraction": 0.20,
+    "execution_pricing": {
+      "buy": "price * (1 + half_spread + impact_coefficient * quantity)",
+      "sell": "price * (1 - half_spread - impact_coefficient * quantity)",
+      "fee": "execution_price * quantity * transaction_fee_rate"
+    },
+    "order_timing": {
+      "decision_time": "close(t)",
+      "execution_time": "open(t+1)",
+      "valuation_time": "close(t+1)"
+    }
+  },
+  "metrics_comparison": {
+    "holdout_evaluation": {
+      "dates": "2017-05-29 to 2017-12-29 (149 trading days)",
+      "reported_in_readme": {
+        "buy_hold": {
+          "initial_value": 97954.50,
+          "final_value": 101834.50,
+          "total_return_pct": 3.96,
+          "annualized_volatility_pct": 14.11,
+          "sharpe_ratio": 0.54,
+          "max_drawdown_pct": -10.89,
+          "executed_orders": 10,
+          "fees_paid": 90.02
+        },
+        "leader": {
+          "initial_value": 100000.00,
+          "final_value": 101661.61,
+          "total_return_pct": 1.66,
+          "annualized_volatility_pct": 17.16,
+          "sharpe_ratio": 0.25,
+          "max_drawdown_pct": -12.03,
+          "executed_orders": 358,
+          "fees_paid": 805.89
+        },
+        "rl_trader": {
+          "initial_value": 100000.00,
+          "final_value": 99454.12,
+          "total_return_pct": -0.55,
+          "annualized_volatility_pct": 0.23,
+          "sharpe_ratio": -4.07,
+          "max_drawdown_pct": -0.55,
+          "executed_orders": 14,
+          "fees_paid": 27.01
+        },
+        "momentum": {
+          "initial_value": 100000.00,
+          "final_value": 78566.78,
+          "total_return_pct": -21.43,
+          "annualized_volatility_pct": 16.46,
+          "sharpe_ratio": -2.41,
+          "max_drawdown_pct": -23.07,
+          "executed_orders": 556,
+          "fees_paid": 1749.42
+        }
+      },
+      "reproduced_from_checkpoint": {
+        "buy_hold": {
+          "initial_value": 97863.474,
+          "final_value": 104423.974,
+          "total_return_pct": 6.704,
+          "annualized_volatility_pct": 11.089,
+          "sharpe_ratio": 1.052,
+          "max_drawdown_pct": -7.371,
+          "executed_orders": 37,
+          "fees_paid": 75.044,
+          "normalized_return_pct_from_100k": 4.424
+        },
+        "leader": {
+          "initial_value": 100000.000,
+          "final_value": 102489.605,
+          "total_return_pct": 2.490,
+          "annualized_volatility_pct": 16.003,
+          "sharpe_ratio": 0.342,
+          "max_drawdown_pct": -14.522,
+          "executed_orders": 634,
+          "fees_paid": 1168.286,
+          "normalized_return_pct_from_100k": 2.490
+        },
+        "rl_trader": {
+          "initial_value": 100000.000,
+          "final_value": 99801.899,
+          "total_return_pct": -0.198,
+          "annualized_volatility_pct": 0.450,
+          "sharpe_ratio": -0.748,
+          "max_drawdown_pct": -0.276,
+          "executed_orders": 16,
+          "fees_paid": 23.691,
+          "normalized_return_pct_from_100k": -0.198
+        },
+        "momentum": {
+          "initial_value": 100000.000,
+          "final_value": 84354.575,
+          "total_return_pct": -15.645,
+          "annualized_volatility_pct": 11.422,
+          "sharpe_ratio": -2.478,
+          "max_drawdown_pct": -18.870,
+          "executed_orders": 626,
+          "fees_paid": 1432.675,
+          "normalized_return_pct_from_100k": -15.645
+        }
+      }
+    }
+  },
+  "audit_findings_and_defects": [
+    {
+      "id": "AUDIT-01",
+      "severity": "HIGH",
+      "category": "Accounting / Experimental Integrity",
+      "title": "Unequal Initial Equity Baseline Comparison",
+      "description": "In evaluate_test.py, execute_buy_and_hold is executed on Day 0 prior to recording the first valuation, immediately deducting spread, impact, and fees. Consequently, buy_hold begins with initial equity ₹97,863.47 whereas all other strategies begin with ₹100,000.00. This distorts return percentage calculations by using a deflated denominator.",
+      "remediation": "Standardize all strategies to an explicit ₹100,000.00 initial capital at t=0 before trading friction is incurred."
+    },
+    {
+      "id": "AUDIT-02",
+      "severity": "MEDIUM",
+      "category": "Market Mechanics",
+      "title": "Sequential Intra-step Stock Order Execution",
+      "description": "When iterating over 40 stocks in each day's step, orders are processed sequentially. As cash is depleted by earlier stocks, later stocks may be skipped or restricted arbitrarily based on alphabetical order.",
+      "remediation": "Implement simultaneous portfolio allocation and feasible-action projection across all constituent assets."
+    },
+    {
+      "id": "AUDIT-03",
+      "severity": "MEDIUM",
+      "category": "Gymnasium Compliance",
+      "title": "Monolithic Non-Gymnasium Environment Architecture",
+      "description": "MarketEnvironment mixes data feeding, execution logic, multi-agent tracking, and feature engineering within a single non-Gymnasium class lacking standardized reset(seed, options) and step(action) protocols.",
+      "remediation": "Build a Gymnasium-compliant adapter supporting discrete and continuous target-weight spaces with training-only observation normalization."
+    },
+    {
+      "id": "AUDIT-04",
+      "severity": "LOW",
+      "category": "Test Automation",
+      "title": "Top-level Execution in Test Scripts",
+      "description": "Test files in tests/ (e.g. test_agent_step.py) contain top-level imperative code that executes on import, causing standard pytest suite discovery to experience collection overhead and potential race conditions.",
+      "remediation": "Convert all test scripts into structured pytest functions with explicit assertions."
+    }
+  ]
+}

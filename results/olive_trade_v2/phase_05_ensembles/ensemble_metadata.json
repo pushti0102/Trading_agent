@@ -1,0 +1,16 @@
+{
+  "validation_weights": {
+    "VolatilityTargeting": 0.04111118242144585,
+    "RiskParity": 0.2956874966621399,
+    "MeanReversion": 0.03999999910593033,
+    "PPO": 0.29811277985572815,
+    "A2C": 0.3250885307788849
+  },
+  "dev_dates_count": 104,
+  "test_dates_count": 149,
+  "regime_distribution": {
+    "BULL_LOW_VOL": 71,
+    "SIDEWAYS_RANGE": 54,
+    "HIGH_VOL_STRESS": 23
+  }
+}

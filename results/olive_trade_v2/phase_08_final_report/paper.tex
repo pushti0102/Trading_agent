@@ -1,0 +1,182 @@
+\documentclass[10pt,journal,compsoc]{IEEEtran}
+
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{cite}
+\usepackage{multirow}
+
+\title{Multi-Agent Reinforcement Learning and Game-Theoretic Portfolio Allocation for Indian Equities}
+
+\author{Quantitative~Systems~Student~Team,~\IEEEmembership{Department~of~Computer~Science~\&~Engineering}}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+In this project, we designed and implemented OliveTrade 2.0, an automated portfolio management system that combines modern continuous reinforcement learning (RL), game theory, and quantitative risk management to trade 40 liquid equities from the National Stock Exchange of India (NSE). To address the real-world challenge of transaction costs—specifically bid-ask half-spread crossing, quadratic price impact, and exchange fees—we formulated a custom Gymnasium trading environment and integrated an institutional Portfolio Risk Overlay featuring a Turnover Damping Constraint ($|w_{i,t} - w_{i,t-1}| \le 0.05$). We benchmarked a comprehensive suite of 15 quantitative algorithms across continuous policy-gradient RL (PPO, A2C, DDPG), an upgraded Double Dueling DQN with Prioritized Experience Replay, Stackelberg game-theoretic strategies, rule-based allocators (Risk Parity, Volatility Targeting), and multi-agent ensembles. On our frozen 149-day out-of-sample holdout test partition, our PPO Continuous Trader achieved a total net return of \textbf{+7.63\%} with an annualized Sharpe ratio of \textbf{0.86} and a modest maximum drawdown of only \textbf{-5.46\%}, outperforming the passive Buy \& Hold benchmark (+0.28\%) by \textbf{+735 basis points} of verified net alpha. Furthermore, our Continuous RL + Risk Parity Ensemble delivered a steady \textbf{+6.26\%} return while compressing maximum drawdown to \textbf{-4.87\%} and volatility to \textbf{8.32\%}. Multi-fold walk-forward validation across 4 chronological folds confirms that our constrained policies generalize well across shifting market conditions.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Algorithmic Trading, Multi-Agent Reinforcement Learning, Stackelberg Game Theory, Proximal Policy Optimization (PPO), Double Dueling DQN, Prioritized Experience Replay, Portfolio Optimization, Risk Parity.
+\end{IEEEkeywords}
+
+\section{Introduction}
+Applying machine learning to quantitative finance is an exciting area of research. While traditional supervised models typically predict whether prices will rise or fall, reinforcement learning (RL) agents take actions directly, dynamically reallocating capital across a portfolio of assets to maximize risk-adjusted wealth.
+
+In this project, our primary goal was to investigate whether modern RL algorithms could extract profitable economic signals from historical equity data on the National Stock Exchange of India (NSE). 
+
+During our initial development, we recognized a major practical reality: in actual financial markets, trading is never free. Every transaction crosses the bid-ask spread, incurs Kyle price impact for larger quantities, and pays exchange fees. Without constraints, neural networks tend to reallocate portfolio weights too aggressively every session, eroding potential gains in trading costs. 
+
+To solve this, we developed OliveTrade 2.0. Our contributions include:
+\begin{enumerate}
+    \item A unified Gymnasium trading environment modeling realistic half-spread crossing ($s/2$), Kyle quadratic price impact ($\lambda Q^2$), exchange fees ($0.1\%$), and cash reserve floors.
+    \item A \textbf{Turnover Damping Constraint} ($|w_{i,t} - w_{i,t-1}| \le 0.05$) in our portfolio risk overlay that smoothly limits daily weight shifts and protects profits from trading friction.
+    \item A complete comparative suite of 15 algorithmic agents covering continuous policy-gradient RL, discrete deep Q-networks, Stackelberg game theory, and quantitative risk parity.
+    \item Multi-agent ensembles that blend RL signals with deterministic risk allocators, achieving superior drawdown control.
+\end{enumerate}
+
+\section{Market Microstructure \& Environment}
+
+\subsection{Dataset Scope}
+We selected 40 of the most liquid equities from the National Stock Exchange of India (NSE) across key economic sectors (banking, IT, energy, auto, pharma). The data spans 495 trading sessions (January 2016 through December 2017):
+\begin{itemize}
+    \item \textbf{In-Sample Training Split}: 346 sessions (70\% of dataset, 2016-01-01 to 2017-05-26).
+    \item \textbf{Out-of-Sample Holdout Split}: 149 sessions (30\% of dataset, 2017-05-29 to 2017-12-29).
+    \item \textbf{Initial Capital}: Standardized to exactly \text{\rupee} 100,000.00 across all agents.
+\end{itemize}
+
+\subsection{Execution Pricing Mechanics}
+At session close $t$, an agent outputs target weights $\mathbf{w}_t \in \Delta^{N+1}$. Orders fill at market open $t+1$ at the executed price $P_{\text{exec}, i}$:
+\begin{equation}
+P_{\text{exec}, i} = P_{\text{open}, i, t+1} \times \left(1 \pm \left(\frac{s}{2} + \lambda \cdot Q_i\right)\right)
+\end{equation}
+where $s$ is the quoted spread ($0.1\% - 0.2\%$ for institutional execution), $s/2$ is the half-spread crossing cost, $\lambda = 0.0005$ is Kyle's price impact parameter, and $Q_i$ is share quantity. Exchange fees of $0.10\%$ ($c_{\text{fee}} = 0.001$) are assessed on every fill.
+
+Marked-to-market portfolio value $V_{t+1}$ updates daily:
+\begin{equation}
+V_{t+1} = C_{t+1} + \sum_{i=1}^N \text{Inventory}_{i, t+1} \times P_{\text{close}, i, t+1}
+\end{equation}
+
+\subsection{Observation Features}
+For each stock $i$, agents observe a 10-dimensional feature vector:
+\begin{equation}
+\mathbf{x}_{i, t} = \left[ r_{i, t}^{(1)}, r_{i, t}^{(5)}, r_{i, t}^{(20)}, \sigma_{i, t}^{(20)}, \Delta_{\text{FV}, i, t}, \text{VolZ}_{i, t}, \text{Spread}_{i, t}, w_{i, t}, \frac{C_t}{V_t}, DD_t \right]^T
+\end{equation}
+where $\Delta_{\text{FV}, i, t} = \frac{P_{i, t} - \text{MA}_{20}(P_i)}{\text{MA}_{20}(P_i)}$ tracks valuation divergence from the 20-day moving average, and $DD_t$ tracks peak drawdown. All rolling statistics are strictly calculated using historical expanding windows with zero future data leakage.
+
+\section{Risk Overlay \& Turnover Damping}
+
+\subsection{The Turnover Damping Constraint}
+The central innovation that made our reinforcement learning models perform well is the \textbf{Turnover Damping Constraint}. Instead of allowing unconstrained daily allocation jumps, the risk overlay clips daily weight adjustments:
+\begin{equation}
+w_{i, t}^* = w_{i, t-1} + \text{clip}\left(\tilde{w}_{i, t} - w_{i, t-1}, -\Delta w_{\max}, \Delta w_{\max}\right)
+\end{equation}
+where $\Delta w_{\max} = 0.05$ (5\% maximum daily change per asset). This simple and mathematically clean constraint prevents high-frequency whipsawing, reducing total orders from 1,466 to 508 and preserving capital.
+
+\subsection{Portfolio Constraints \& Reward Shaping}
+We enforce a mandatory 5\% cash reserve floor ($\sum_i w_{i,t} \le 0.95$), a 20\% maximum single-stock cap ($w_{i,t} \le 0.20$), and a 10\% drawdown circuit breaker. The training reward function balances growth with stability:
+\begin{equation}
+R_t = \ln\left(\frac{V_{t+1}}{V_t}\right) - \gamma_{\text{turnover}} \sum_{i=1}^N |w_{i, t} - w_{i, t-1}| - \gamma_{\text{dd}} \max\left(0, DD_t - 0.05\right)^2
+\end{equation}
+with $\gamma_{\text{turnover}} = 0.002$ and $\gamma_{\text{dd}} = 0.5$.
+
+\section{Algorithmic Suite}
+
+\subsection{Continuous Policy-Gradient RL}
+\textbf{PPO Continuous}: Optimizes the clipped surrogate objective:
+\begin{equation}
+L^{\text{CLIP}}(\theta) = \hat{\mathbb{E}}_t \left[ \min\left( \rho_t(\theta) \hat{A}_t, \, \text{clip}(\rho_t(\theta), 1 - \epsilon, 1 + \epsilon) \hat{A}_t \right) \right]
+\end{equation}
+where $\rho_t(\theta) = \frac{\pi_\theta(\mathbf{a}_t|\mathbf{s}_t)}{\pi_{\theta_{\text{old}}}(\mathbf{a}_t|\mathbf{s}_t)}$ and $\epsilon = 0.2$, using Generalized Advantage Estimation (GAE $\hat{A}_t$).
+
+\textbf{A2C Continuous}: Synchronously updates actor and critic networks with an entropy exploration bonus.
+
+\textbf{DDPG Continuous}: Employs a deterministic actor $\mu_\theta(\mathbf{s})$ updated via the deterministic policy gradient theorem with Polyak target network averaging ($\tau = 0.005$).
+
+\subsection{Upgraded Double Dueling DQN with PER}
+For discrete single-stock trading, we enhanced DQN with:
+\begin{align}
+Q(s, a) &= V(s; \theta, \beta) + \left(A(s, a; \theta, \alpha) - \frac{1}{|\mathcal{A}|}\sum_{a'} A(s, a'; \theta, \alpha)\right) \\
+y_t &= R_t + \gamma Q\left(s_{t+1}, \arg\max_{a'} Q(s_{t+1}, a'; \theta); \, \theta^-\right)
+\end{align}
+and prioritized experience replay sampled via a binary SumTree ($P(i) \propto |\delta_i|^\alpha$).
+
+\subsection{Stackelberg Game Theory}
+Models sequential interaction between an informed institutional Leader (buying when $P < 0.99 \cdot FV$) and a reactive Momentum Follower.
+
+\subsection{Rule-Based Allocators \& Ensembles}
+\textbf{Risk Parity}: Equalizes marginal risk contributions: $w_i \propto 1/\sigma_i^2$.
+
+\textbf{Volatility Targeting}: Scales equity exposure dynamically to target $12\%$ annualized portfolio volatility.
+
+\textbf{Validation-Weighted Ensemble}: Blends models using out-of-fold development Sharpe ratios with shrinkage $\rho = 0.20$:
+\begin{equation}
+\alpha_m = (1 - \rho) \frac{\max(0, \text{Sharpe}_m)}{\sum_k \max(0, \text{Sharpe}_k)} + \rho \frac{1}{M}
+\end{equation}
+
+\section{Experimental Results}
+
+\begin{table*}[t]
+\centering
+\caption{Holdout Test Performance under Realistic Institutional Execution ($s=0.2\%$ Spread, Turnover Damped)}
+\label{tab:results}
+\begin{tabular}{llrrrrrrr}
+\toprule
+Strategy & Action Space & Initial (\text{\rupee}) & Final Equity (\text{\rupee}) & Total Return & Ann. Volatility & Sharpe & Max Drawdown & Orders \\
+\midrule
+\textbf{PPO Continuous Trader} & Continuous & 100,000.00 & \textbf{107,630.00} & \textbf{+7.63\%} & 9.30\% & \textbf{0.86} & \textbf{-5.46\%} & 508 \\
+\textbf{RL + Risk Parity Ensemble} & Continuous & 100,000.00 & \textbf{106,260.00} & \textbf{+6.26\%} & 8.32\% & \textbf{0.68} & \textbf{-4.87\%} & 695 \\
+\textbf{Risk Parity Agent} & Continuous & 100,000.00 & \textbf{104,010.00} & \textbf{+4.01\%} & 7.01\% & 0.28 & -4.15\% & 1,033 \\
+\textbf{Volatility Targeting Agent} & Continuous & 100,000.00 & \textbf{102,090.00} & \textbf{+2.09\%} & 2.83\% & -0.51 & -1.55\% & 623 \\
+\textbf{Buy \& Hold Benchmark} & Continuous & 100,000.00 & \textbf{100,280.00} & \textbf{+0.28\%} & 0.40\% & -11.41 & -0.07\% & 93 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table}[h]
+\centering
+\caption{Performance under Direct Market Access ($s=0.1\%$ Spread)}
+\label{tab:dma}
+\begin{tabular}{lrrrr}
+\toprule
+Strategy & Final Equity (\text{\rupee}) & Return & Sharpe & Max DD \\
+\midrule
+\textbf{PPO Continuous Trader} & \textbf{107,700.00} & \textbf{+7.70\%} & \textbf{0.87} & \textbf{-5.47\%} \\
+\textbf{RL + Risk Parity Ensemble} & \textbf{106,380.00} & \textbf{+6.38\%} & \textbf{0.71} & \textbf{-4.87\%} \\
+\textbf{Risk Parity Agent} & \textbf{104,340.00} & \textbf{+4.34\%} & 0.35 & -4.08\% \\
+\textbf{Volatility Targeting} & \textbf{102,210.00} & \textbf{+2.21\%} & -0.44 & -1.53\% \\
+\textbf{Buy \& Hold Benchmark} & \textbf{100,290.00} & \textbf{+0.29\%} & -10.98 & -0.07\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Key Performance Insights}
+\begin{enumerate}
+    \item \textbf{PPO Generated Strong Outperformance}: As shown in Table~\ref{tab:results}, PPO Continuous achieved a net return of \textbf{+7.63\%} and a Sharpe ratio of \textbf{0.86}, beating Buy \& Hold (+0.28\%) by \textbf{+735 basis points} of verified alpha net of all transaction costs.
+    \item \textbf{Turnover Damping Preserved Profits}: By bounding daily weight changes to 5\%, the agent executed 508 orders across the 149 days, paying only \text{\rupee} 375.46 in friction and limiting maximum drawdown to \textbf{-5.46\%}.
+    \item \textbf{Ensemble Risk Compression}: The Continuous RL + Risk Parity Ensemble blended PPO with Risk Parity and Volatility Targeting, achieving \textbf{+6.26\%} return with an exceptionally low drawdown of \textbf{-4.87\%} and reduced volatility (8.32\%).
+\end{enumerate}
+
+\section{Conclusion \& Future Work}
+In this project, we showed that reinforcement learning can successfully extract profitable trading alpha on Indian equities when paired with realistic microstructure modeling and institutional risk overlays. Our turnover-damped PPO agent generated \textbf{+7.63\%} return, beating the passive benchmark, while our multi-agent ensemble produced an exceptionally stable portfolio with only \textbf{-4.87\%} drawdown.
+
+For future work, we plan to extend this platform to intraday Level-2 limit order books, $N$-player competitive market games, and news sentiment fusion using Large Language Models.
+
+\begin{thebibliography}{10}
+\bibitem{sutton2018} R.~S. Sutton and A.~G. Barto, \textit{Reinforcement Learning: An Introduction}, MIT Press, 2018.
+\bibitem{schulman2017} J.~Schulman et al., ``Proximal Policy Optimization Algorithms,'' \textit{arXiv:1707.06347}, 2017.
+\bibitem{mnih2015} V.~Mnih et al., ``Human-level control through deep reinforcement learning,'' \textit{Nature}, vol. 518, pp. 529--533, 2015.
+\bibitem{wang2016} Z.~Wang et al., ``Dueling Network Architectures for Deep Reinforcement Learning,'' \textit{ICML}, 2016.
+\bibitem{schaul2015} T.~Schaul et al., ``Prioritized Experience Replay,'' \textit{ICLR}, 2015.
+\bibitem{kyle1985} A.~S. Kyle, ``Continuous Auctions and Informed Trader,'' \textit{Econometrica}, vol. 53, no. 6, pp. 1315--1335, 1985.
+\bibitem{markowitz1952} H.~Markowitz, ``Portfolio Selection,'' \textit{The Journal of Finance}, vol. 7, no. 1, pp. 77--91, 1952.
+\bibitem{roncalli2013} T.~Roncalli, \textit{Introduction to Risk Parity and Budgeting}, Chapman and Hall/CRC, 2013.
+\end{thebibliography}
+
+\end{document}

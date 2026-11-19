@@ -1,0 +1,39 @@
+{
+  "project": "OliveTrade 2.0 \u2014 Multi-Agent Reinforcement Learning Research Upgrade",
+  "date": "2026-10-29",
+  "scope": {
+    "universe_size": 40,
+    "market": "National Stock Exchange of India (NSE)",
+    "data_start": "2016-01-01",
+    "data_end": "2017-12-29",
+    "train_sessions": 346,
+    "holdout_sessions": 149,
+    "initial_capital_inr": 100000.0,
+    "risk_free_rate": 0.05
+  },
+  "microstructure_assumptions": {
+    "quoted_spread": 0.02,
+    "charged_half_spread": 0.01,
+    "price_impact_lambda": 0.0005,
+    "transaction_fee_rate": 0.001,
+    "max_order_size_shares": 100,
+    "cash_reserve_floor": 0.05,
+    "single_stock_cap": 0.2
+  },
+  "strategies_count": 15,
+  "phases_completed": [
+    "phase_01_audit",
+    "phase_02_environment",
+    "phase_03_baselines",
+    "phase_04_rl_agents",
+    "phase_05_risk_management",
+    "phase_05_ensembles",
+    "phase_06_walk_forward",
+    "phase_07_robustness",
+    "phase_08_final_report"
+  ],
+  "master_benchmark_file": "master_strategy_benchmark.csv",
+  "institutional_execution_benchmark_file": "institutional_execution_benchmark.csv",
+  "research_report_file": "RESEARCH_REPORT.md",
+  "latex_paper_file": "paper.tex"
+}
